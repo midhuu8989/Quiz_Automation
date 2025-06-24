@@ -3,7 +3,7 @@ import streamlit as st
 import openai
 import json
 from io import BytesIO
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from docx import Document
 from docx.shared import Pt
 import pandas as pd
