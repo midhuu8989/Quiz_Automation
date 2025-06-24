@@ -10,6 +10,7 @@ import pandas as pd
 #from langchain.chat_models import ChatOpenAI
 from langchain_openai import ChatOpenAI
 
+
 # Load environment variables
 #load_dotenv()
 #openai_api_key = os.getenv("OPENAI_API_KEY")
