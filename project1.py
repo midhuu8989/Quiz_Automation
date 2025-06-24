@@ -10,8 +10,9 @@ import pandas as pd
 from langchain.chat_models import ChatOpenAI
 
 # Load environment variables
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
+#load_dotenv()
+#openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Initialize Langchain LLM
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key=openai_api_key)
