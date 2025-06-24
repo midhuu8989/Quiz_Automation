@@ -8,6 +8,7 @@ from docx import Document
 from docx.shared import Pt
 import pandas as pd
 from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 # Load environment variables
 #load_dotenv()
