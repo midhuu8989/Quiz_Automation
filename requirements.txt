@@ -13,4 +13,4 @@ pdfplumber
 docx2txt
 xlsxwriter
 #lxml==5.2.1
-
+langchain-openai
