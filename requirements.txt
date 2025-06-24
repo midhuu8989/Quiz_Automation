@@ -1,23 +1,16 @@
+streamlit
+openai
 langchain
+python-docx
 python-dotenv
-ipykernel
-langchain_community
 pypdf
 bs4
 arxiv
-pymupdf
-fitz
+PyMuPDF
 wikipedia
 langchain-text-splitters
-streamlit
-python-docx
 pdfplumber
 docx2txt
-openai
-langchain
-python-dotenv
 xlsxwriter
-python-docx
 lxml==5.2.1
-docx
 
