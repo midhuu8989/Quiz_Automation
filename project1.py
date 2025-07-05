@@ -237,7 +237,9 @@ if topic:
                 except Exception as e:
                     st.error(f"Failed to generate for '{sub}' ({level}): {e}")
 
+        original_mcqs = all_mcqs.copy()
         all_mcqs, dup_count = remove_and_regenerate_duplicates(all_mcqs)
+
         if dup_count > 0:
             st.warning(f"⚠️ {dup_count} duplicate questions were found and regenerated.")
         else:
@@ -245,12 +247,24 @@ if topic:
 
         st.success("✅ MCQs generated!")
 
+        st.markdown("### 📂 Download Original MCQs (May contain duplicates)")
         if format_choice == "Word":
-            docx_file = create_mcq_doc(all_mcqs, topic)
-            st.download_button("📅 Download Word File", docx_file, file_name=f"Quiz_{topic}.docx")
+            docx_original = create_mcq_doc(original_mcqs, topic)
+            st.download_button("📄 Download Word (With Duplicates)", docx_original, file_name=f"Quiz_{topic}_Original.docx")
         elif format_choice == "Excel":
-            xlsx_file = save_to_excel(topic, all_mcqs)
-            st.download_button("📅 Download Excel File", xlsx_file, file_name=f"Quiz_{topic}.xlsx")
+            xlsx_original = save_to_excel(topic, original_mcqs)
+            st.download_button("📊 Download Excel (With Duplicates)", xlsx_original, file_name=f"Quiz_{topic}_Original.xlsx")
         else:
-            gift_file = create_gift_file(all_mcqs, topic)
-            st.download_button("📄 Download GIFT File (Moodle)", gift_file, file_name=f"Quiz_{topic}.txt")
+            gift_original = create_gift_file(original_mcqs, topic)
+            st.download_button("📑 Download GIFT (With Duplicates)", gift_original, file_name=f"Quiz_{topic}_Original.txt")
+
+        st.markdown("### 🎯 Download Cleaned MCQs (Duplicates Removed & Regenerated)")
+        if format_choice == "Word":
+            docx_clean = create_mcq_doc(all_mcqs, topic)
+            st.download_button("✅ Download Clean Word", docx_clean, file_name=f"Quiz_{topic}_Clean.docx")
+        elif format_choice == "Excel":
+            xlsx_clean = save_to_excel(topic, all_mcqs)
+            st.download_button("✅ Download Clean Excel", xlsx_clean, file_name=f"Quiz_{topic}_Clean.xlsx")
+        else:
+            gift_clean = create_gift_file(all_mcqs, topic)
+            st.download_button("✅ Download Clean GIFT", gift_clean, file_name=f"Quiz_{topic}_Clean.txt")
