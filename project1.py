@@ -3,17 +3,12 @@ import streamlit as st
 import openai
 import json
 from io import BytesIO
-#from dotenv import load_dotenv
 from docx import Document
 from docx.shared import Pt
 import pandas as pd
-#from langchain.chat_models import ChatOpenAI
 from langchain_openai import ChatOpenAI
 
-
-# Load environment variables
-#load_dotenv()
-#openai_api_key = os.getenv("OPENAI_API_KEY")
+# Load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Initialize Langchain LLM
@@ -42,7 +37,40 @@ Return as JSON in this format:
     result = llm.invoke(prompt)
     return json.loads(result.content)
 
-# Create Word document with updated format
+# Handle duplicates and regenerate them
+def remove_and_regenerate_duplicates(all_mcqs):
+    seen_questions = set()
+    duplicates_info = []
+    MAX_RETRIES = 3
+
+    for (subtopic_level, mcq_list) in all_mcqs.items():
+        for idx, q in enumerate(mcq_list):
+            q_text = q['question'].strip().lower()
+            if q_text in seen_questions:
+                duplicates_info.append((subtopic_level, idx))
+            else:
+                seen_questions.add(q_text)
+
+    total_duplicates = len(duplicates_info)
+
+    for (subtopic_level, idx) in duplicates_info:
+        sub, level = subtopic_level
+        attempts = 0
+        while attempts < MAX_RETRIES:
+            try:
+                new_q = generate_mcqs(sub, 1)[0]
+                new_q_text = new_q['question'].strip().lower()
+                if new_q_text not in seen_questions:
+                    all_mcqs[subtopic_level][idx] = new_q
+                    seen_questions.add(new_q_text)
+                    break
+            except:
+                pass
+            attempts += 1
+
+    return all_mcqs, total_duplicates
+
+# Word Export
 def create_mcq_doc(sample_mcqs, topic):
     doc = Document()
     style = doc.styles['Normal']
@@ -56,7 +84,6 @@ def create_mcq_doc(sample_mcqs, topic):
     for (subtopic, level), mcqs in sample_mcqs.items():
         for q in mcqs:
             doc.add_paragraph(f"Q{q_counter}_{subtopic}_{level}")
-
             table = doc.add_table(rows=19, cols=4)
             table.style = 'Table Grid'
 
@@ -111,7 +138,7 @@ def create_mcq_doc(sample_mcqs, topic):
     buffer.seek(0)
     return buffer
 
-# Save to Excel in custom format
+# Excel Export
 def save_to_excel(topic, all_mcqs):
     rows = []
     for (subtopic, level), mcqs in all_mcqs.items():
@@ -144,7 +171,7 @@ def save_to_excel(topic, all_mcqs):
     buf.seek(0)
     return buf
 
-# Create GIFT format text file for Moodle
+# GIFT Format Export
 def create_gift_file(sample_mcqs, topic):
     gift_lines = [f"// QUIZ: {topic}\n"]
     q_counter = 1
@@ -203,6 +230,13 @@ if topic:
                     all_mcqs[(sub, level)] = generate_mcqs(sub, num)
                 except Exception as e:
                     st.error(f"Failed to generate for '{sub}' ({level}): {e}")
+
+        all_mcqs, dup_count = remove_and_regenerate_duplicates(all_mcqs)
+        if dup_count > 0:
+            st.warning(f"⚠️ {dup_count} duplicate questions were found and regenerated.")
+        else:
+            st.success("✅ No duplicate questions found.")
+
         st.success("✅ MCQs generated!")
 
         if format_choice == "Word":
