@@ -20,12 +20,21 @@ DEFAULT_SUBTOPICS = {
     "Python": ["Loops", "Functions", "Data Types", "OOP"]
 }
 
-# Generate MCQs from LLM
-def generate_mcqs(subtopic, num_questions):
-    prompt = f"""
-Generate {num_questions} multiple choice questions on the topic: {subtopic}.
-Each question must have 4 options (A–D), and specify the correct answer.
-Return as JSON in this format:
+# Generate MCQs from LLM based on level
+
+def generate_mcqs(subtopic, num_questions, level):
+    if level == "simple":
+        instruction = f"""Generate {num_questions} direct, factual multiple choice questions (MCQs) for the topic \"{subtopic}\". Each question should be of the form \"What is...\" or \"Which of the following...\" and should have 4 options (A–D), with only one correct answer."""
+    elif level == "medium":
+        instruction = f"""Generate {num_questions} practical usage-based MCQs for the topic \"{subtopic}\". Focus on questions that involve real-world application or Python function/method usage. Each question should have 4 options (A–D), with one correct answer."""
+    elif level == "complex":
+        instruction = f"""Generate {num_questions} scenario-based or case-based MCQs for the topic \"{subtopic}\". Present a real-world problem or situation where the learner must apply knowledge of \"{subtopic}\". Use 4 options (A–D), with one correct answer."""
+    else:
+        instruction = f"""Generate {num_questions} multiple choice questions on the topic \"{subtopic}\" with 4 options (A–D) and one correct answer."""
+
+    final_prompt = f"""
+{instruction}
+Return the questions in JSON format like this:
 [
   {{
     "question": "...",
@@ -34,7 +43,7 @@ Return as JSON in this format:
   }}
 ]
 """
-    result = llm.invoke(prompt)
+    result = llm.invoke(final_prompt)
     return json.loads(result.content)
 
 # Handle duplicates and regenerate them
@@ -58,7 +67,7 @@ def remove_and_regenerate_duplicates(all_mcqs):
         attempts = 0
         while attempts < MAX_RETRIES:
             try:
-                new_mcqs = generate_mcqs(sub, 1)
+                new_mcqs = generate_mcqs(sub, 1, level)
                 if not new_mcqs:
                     attempts += 1
                     continue
@@ -76,7 +85,7 @@ def remove_and_regenerate_duplicates(all_mcqs):
 
     return all_mcqs, total_duplicates
 
-# Word Export
+# Export to Word
 def create_mcq_doc(sample_mcqs, topic):
     doc = Document()
     style = doc.styles['Normal']
@@ -144,7 +153,7 @@ def create_mcq_doc(sample_mcqs, topic):
     buffer.seek(0)
     return buffer
 
-# Excel Export
+# Export to Excel
 def save_to_excel(topic, all_mcqs):
     rows = []
     for (subtopic, level), mcqs in all_mcqs.items():
@@ -177,7 +186,7 @@ def save_to_excel(topic, all_mcqs):
     buf.seek(0)
     return buf
 
-# GIFT Format Export
+# Export to GIFT format
 def create_gift_file(sample_mcqs, topic):
     gift_lines = [f"// QUIZ: {topic}\n"]
     q_counter = 1
@@ -233,13 +242,11 @@ if topic:
         with st.spinner("Generating questions..."):
             for (sub, level), num in custom_subtopics.items():
                 try:
-                    all_mcqs[(sub, level)] = generate_mcqs(sub, num)
+                    all_mcqs[(sub, level)] = generate_mcqs(sub, num, level)
                 except Exception as e:
                     st.error(f"Failed to generate for '{sub}' ({level}): {e}")
 
-        original_mcqs = all_mcqs.copy()
         all_mcqs, dup_count = remove_and_regenerate_duplicates(all_mcqs)
-
         if dup_count > 0:
             st.warning(f"⚠️ {dup_count} duplicate questions were found and regenerated.")
         else:
@@ -247,24 +254,12 @@ if topic:
 
         st.success("✅ MCQs generated!")
 
-        st.markdown("### 📂 Download Original MCQs (May contain duplicates)")
         if format_choice == "Word":
-            docx_original = create_mcq_doc(original_mcqs, topic)
-            st.download_button("📄 Download Word (With Duplicates)", docx_original, file_name=f"Quiz_{topic}_Original.docx")
+            docx_file = create_mcq_doc(all_mcqs, topic)
+            st.download_button("📅 Download Word File", docx_file, file_name=f"Quiz_{topic}.docx")
         elif format_choice == "Excel":
-            xlsx_original = save_to_excel(topic, original_mcqs)
-            st.download_button("📊 Download Excel (With Duplicates)", xlsx_original, file_name=f"Quiz_{topic}_Original.xlsx")
+            xlsx_file = save_to_excel(topic, all_mcqs)
+            st.download_button("📅 Download Excel File", xlsx_file, file_name=f"Quiz_{topic}.xlsx")
         else:
-            gift_original = create_gift_file(original_mcqs, topic)
-            st.download_button("📑 Download GIFT (With Duplicates)", gift_original, file_name=f"Quiz_{topic}_Original.txt")
-
-        st.markdown("### 🎯 Download Cleaned MCQs (Duplicates Removed & Regenerated)")
-        if format_choice == "Word":
-            docx_clean = create_mcq_doc(all_mcqs, topic)
-            st.download_button("✅ Download Clean Word", docx_clean, file_name=f"Quiz_{topic}_Clean.docx")
-        elif format_choice == "Excel":
-            xlsx_clean = save_to_excel(topic, all_mcqs)
-            st.download_button("✅ Download Clean Excel", xlsx_clean, file_name=f"Quiz_{topic}_Clean.xlsx")
-        else:
-            gift_clean = create_gift_file(all_mcqs, topic)
-            st.download_button("✅ Download Clean GIFT", gift_clean, file_name=f"Quiz_{topic}_Clean.txt")
+            gift_file = create_gift_file(all_mcqs, topic)
+            st.download_button("📄 Download GIFT File (Moodle)", gift_file, file_name=f"Quiz_{topic}.txt")
