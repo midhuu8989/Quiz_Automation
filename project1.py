@@ -41,7 +41,7 @@ Return as JSON in this format:
 def remove_and_regenerate_duplicates(all_mcqs):
     seen_questions = set()
     duplicates_info = []
-    MAX_RETRIES = 3
+    MAX_RETRIES = 5
 
     for (subtopic_level, mcq_list) in all_mcqs.items():
         for idx, q in enumerate(mcq_list):
@@ -58,14 +58,20 @@ def remove_and_regenerate_duplicates(all_mcqs):
         attempts = 0
         while attempts < MAX_RETRIES:
             try:
-                new_q = generate_mcqs(sub, 1)[0]
+                new_mcqs = generate_mcqs(sub, 1)
+                if not new_mcqs:
+                    attempts += 1
+                    continue
+
+                new_q = new_mcqs[0]
                 new_q_text = new_q['question'].strip().lower()
+
                 if new_q_text not in seen_questions:
                     all_mcqs[subtopic_level][idx] = new_q
                     seen_questions.add(new_q_text)
                     break
-            except:
-                pass
+            except Exception as e:
+                print(f"Retry {attempts+1} failed for {subtopic_level}: {e}")
             attempts += 1
 
     return all_mcqs, total_duplicates
