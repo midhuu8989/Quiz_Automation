@@ -1,7 +1,7 @@
-#import os
-#import streamlit as st
-#import openai
-#import json
+import os
+import streamlit as st
+import openai
+import json
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt
