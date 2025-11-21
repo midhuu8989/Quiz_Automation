@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-#import openai
+import openai
 import json
 from io import BytesIO
 from docx import Document
